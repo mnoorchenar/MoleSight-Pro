@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}ADMET Predictor — MoleSight AI{% endblock %}
+
+{% block content %}
+<div class="page-header fade-up">
+  <h1>ADMET <span class="accent">Profile Predictor</span></h1>
+  <div class="sub">Absorption · Distribution · Metabolism · Excretion · Toxicity · ML-predicted safety profile</div>
+</div>
+
+<div class="grid-2 fade-up">
+
+  <!-- Left -->
+  <div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">SMILES Input</div>
+      <form method="POST" action="{{ url_for('prediction.admet') }}">
+        <div class="form-group">
+          <label class="form-label" for="smiles-input">SMILES String</label>
+          <input id="smiles-input" name="smiles" class="form-input"
+                 placeholder="e.g. Cn1cnc2c1c(=O)n(c(=O)n2C)C"
+                 value="{{ smiles_input }}" autocomplete="off"/>
+        </div>
+        <div style="margin-bottom:1rem">
+          <div class="form-label">Quick Examples</div>
+          <div class="example-pills">
+            {% for name, smi in examples %}
+            <span class="pill" data-smiles="{{ smi }}">{{ name }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">🧪 Predict ADMET</button>
+      </form>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-error fade-up">⚠ {{ error }}</div>
+    {% endif %}
+
+    {% if result %}
+    <!-- Traffic lights -->
+    <div class="card fade-up" style="margin-bottom:1rem">
+      <div class="card-title">ADMET Traffic Light Summary</div>
+
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem">
+        <div class="score-badge" style="{% set o=result.admet.overall %}{% if o >= 0.6 %}border-color:var(--g1);color:var(--g1){% elif o >= 0.4 %}border-color:var(--amber);color:var(--amber){% else %}border-color:var(--red);color:var(--red){% endif %}">
+          {{ (result.admet.overall * 100)|round|int }}%
+        </div>
+        <div>
+          <div style="font-family:var(--font-head);font-size:1rem;font-weight:700;color:#fff">Overall ADMET Score</div>
+          <div style="font-size:.72rem;color:var(--muted)">Composite safety/pharmacokinetic profile</div>
+        </div>
+      </div>
+
+      {% for prop, score in result.admet.scores.items() %}
+      {% set light = result.lights[prop] %}
+      <div style="margin-bottom:.65rem">
+        <div class="tl-row">
+          <div class="tl-dot tl-{{ light }}"></div>
+          <span style="font-size:.8rem;color:#fff;font-weight:500;min-width:110px">{{ prop }}</span>
+          <div style="flex:1;height:4px;background:var(--surface);border-radius:2px;overflow:hidden;margin:0 .5rem">
+            <div style="height:100%;width:{{ (score*100)|round|int }}%;background:{% if light == 'green' %}var(--g1){% elif light == 'amber' %}var(--amber){% else %}var(--red){% endif %};border-radius:2px;transition:width .8s ease"></div>
+          </div>
+          <span style="font-size:.72rem;color:{% if light == 'green' %}var(--g1){% elif light == 'amber' %}var(--amber){% else %}var(--red){% endif %}">{{ (score*100)|round(1) }}%</span>
+        </div>
+        <div style="font-size:.67rem;color:var(--muted);padding-left:1.2rem;margin-top:1px">{{ result.descriptions[prop] }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Input properties -->
+    <div class="card fade-up">
+      <div class="card-title">Molecular Input Features</div>
+      <table class="prop-table">
+        <thead><tr><th>Property</th><th>Value</th></tr></thead>
+        <tbody>
+          {% set p = result.props %}
+          <tr><td>MW</td><td class="val">{{ p.mw }} Da</td></tr>
+          <tr><td>LogP</td><td class="val">{{ p.logp }}</td></tr>
+          <tr><td>HBD / HBA</td><td class="val">{{ p.hbd }} / {{ p.hba }}</td></tr>
+          <tr><td>TPSA</td><td class="val">{{ p.tpsa }} Å²</td></tr>
+          <tr><td>Fsp³</td><td class="val">{{ p.fsp3 }}</td></tr>
+          <tr><td>QED</td><td class="val" style="color:var(--amber)">{{ p.qed }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right -->
+  <div>
+    {% if result %}
+    <div class="card fade-up" style="margin-bottom:1rem">
+      <div class="card-title">ADMET Gauge Charts</div>
+      <div id="chart-gauges" class="plotly-wrap" style="min-height:380px"></div>
+    </div>
+
+    <div class="card fade-up">
+      <div class="card-title">Interpretation Guide</div>
+      <div style="font-size:.75rem;color:var(--text);line-height:1.7">
+        <div class="tl-row" style="margin-bottom:.4rem">
+          <div class="tl-dot tl-green"></div>
+          <span>Score &ge;60% — Favourable pharmacokinetic/safety property</span>
+        </div>
+        <div class="tl-row" style="margin-bottom:.4rem">
+          <div class="tl-dot tl-amber"></div>
+          <span>Score 35–60% — Moderate; optimisation may be needed</span>
+        </div>
+        <div class="tl-row">
+          <div class="tl-dot tl-red"></div>
+          <span>Score &lt;35% — Potential liability; structural modification advised</span>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="card fade-up" style="border-style:dashed">
+      <div style="text-align:center;padding:3rem;color:var(--muted)">
+        <div style="font-size:3rem;margin-bottom:.75rem">🧪</div>
+        <div style="font-size:.85rem;max-width:280px;margin:0 auto">
+          ADMET prediction is critical for drug development. Enter a SMILES string to generate a comprehensive pharmacokinetic profile.
+        </div>
+      </div>
+    </div>
+
+    <div class="card fade-up" style="margin-top:1rem">
+      <div class="card-title">ADMET Properties Explained</div>
+      <div style="font-size:.75rem;color:var(--text);line-height:1.8">
+        <p style="margin-bottom:.5rem"><strong style="color:var(--g1)">Absorption</strong> — Oral bioavailability via GI tract. Correlated with LogP, TPSA, MW.</p>
+        <p style="margin-bottom:.5rem"><strong style="color:var(--g2)">Distribution</strong> — Volume of distribution. Relates to tissue binding and LogP.</p>
+        <p style="margin-bottom:.5rem"><strong style="color:var(--amber)">Metabolism</strong> — CYP450-mediated hepatic clearance. High Fsp³ → more stable.</p>
+        <p style="margin-bottom:.5rem"><strong style="color:var(--g1)">Excretion</strong> — Renal clearance. Smaller, polar molecules clear faster.</p>
+        <p><strong style="color:var(--red)">Toxicity</strong> — Safety composite: hERG, AMES mutagenicity, hepatotoxicity.</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  {% if result %}
+  renderPlotly('chart-gauges', {{ result.chart_gauges | safe }});
+  {% endif %}
+</script>
+{% endblock %}

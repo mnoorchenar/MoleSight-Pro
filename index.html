@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — MoleSight AI{% endblock %}
+
+{% block content %}
+<div class="page-header fade-up">
+  <h1>Compound <span class="accent">Analytics</span> Dashboard</h1>
+  <div class="sub">Overview of the curated drug compound library · Research dataset · v1.0</div>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid">
+  <div class="kpi-card green fade-up delay-1">
+    <div class="kpi-label">Total Compounds</div>
+    <div class="kpi-value">{{ stats.total_compounds }}</div>
+    <div class="kpi-sub">Curated drug library</div>
+  </div>
+  <div class="kpi-card blue fade-up delay-1">
+    <div class="kpi-label">Drug-Like Hits</div>
+    <div class="kpi-value">{{ stats.drug_like_count }}</div>
+    <div class="kpi-sub">{{ stats.drug_like_pct }}% of library</div>
+  </div>
+  <div class="kpi-card amber fade-up delay-2">
+    <div class="kpi-label">Avg QED Score</div>
+    <div class="kpi-value">{{ stats.avg_qed }}</div>
+    <div class="kpi-sub">Quantitative drug-likeness</div>
+  </div>
+  <div class="kpi-card green fade-up delay-2">
+    <div class="kpi-label">High Activity (IC50 &lt;100 nM)</div>
+    <div class="kpi-value">{{ stats.high_activity_count }}</div>
+    <div class="kpi-sub">Potent compounds</div>
+  </div>
+  <div class="kpi-card blue fade-up delay-3">
+    <div class="kpi-label">Targets Covered</div>
+    <div class="kpi-value">{{ stats.targets_covered }}</div>
+    <div class="kpi-sub">Unique biological targets</div>
+  </div>
+  <div class="kpi-card amber fade-up delay-3">
+    <div class="kpi-label">ML Models</div>
+    <div class="kpi-value">2</div>
+    <div class="kpi-sub">Drug-like · ADMET</div>
+  </div>
+</div>
+
+<!-- Charts row 1 -->
+<div class="grid-2 fade-up delay-2" style="margin-bottom:1rem">
+  <div class="card">
+    <div class="card-title">Chemical Space — MW vs LogP</div>
+    <div id="chart-mw-logp" class="plotly-wrap"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">QED Score Distribution</div>
+    <div id="chart-qed" class="plotly-wrap"></div>
+  </div>
+</div>
+
+<!-- Charts row 2 -->
+<div class="grid-2 fade-up delay-3" style="margin-bottom:1rem">
+  <div class="card">
+    <div class="card-title">TPSA vs MW — Oral Bioavailability</div>
+    <div id="chart-tpsa-mw" class="plotly-wrap"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Normalised Property Heatmap</div>
+    <div id="chart-heatmap" class="plotly-wrap"></div>
+  </div>
+</div>
+
+<!-- Compound table -->
+<div class="card fade-up delay-4" style="margin-bottom:1rem">
+  <div class="card-title">Compound Library</div>
+  <div style="overflow-x:auto">
+    <table class="compound-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Target</th>
+          <th>MW</th>
+          <th>LogP</th>
+          <th>TPSA</th>
+          <th>QED</th>
+          <th>IC₅₀ (nM)</th>
+          <th>Drug-Like</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in compounds %}
+        <tr>
+          <td style="color:#fff;font-weight:500">{{ c.name }}</td>
+          <td style="color:var(--muted);font-size:.7rem">{{ c.target }}</td>
+          <td>{{ c.mw }}</td>
+          <td>{{ c.logp }}</td>
+          <td>{{ c.tpsa }}</td>
+          <td style="color:var(--amber)">{{ c.qed }}</td>
+          <td>
+            {% if c.ic50_nm < 10 %}
+              <span style="color:var(--g1)">{{ c.ic50_nm }}</span>
+            {% elif c.ic50_nm < 100 %}
+              <span style="color:var(--amber)">{{ c.ic50_nm }}</span>
+            {% else %}
+              <span style="color:var(--muted)">{{ c.ic50_nm }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if c.drug_like %}
+              <span class="tag tag-green">Yes</span>
+            {% else %}
+              <span class="tag tag-red">No</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Quick links -->
+<div class="grid-3 fade-up delay-4">
+  <a href="{{ url_for('main.analyze') }}" class="card" style="text-decoration:none;transition:border-color .2s;cursor:pointer" onmouseover="this.style.borderColor='var(--g1)'" onmouseout="this.style.borderColor='var(--border)'">
+    <div style="font-size:2rem;margin-bottom:.5rem">🔬</div>
+    <div class="card-title">Molecule Analyzer</div>
+    <div style="font-size:.75rem;color:var(--muted)">Compute full property profile from SMILES. Lipinski, Veber, Ghose rule assessment.</div>
+  </a>
+  <a href="{{ url_for('prediction.drug_likeness') }}" class="card" style="text-decoration:none;transition:border-color .2s;cursor:pointer" onmouseover="this.style.borderColor='var(--g2)'" onmouseout="this.style.borderColor='var(--border)'">
+    <div style="font-size:2rem;margin-bottom:.5rem">🧠</div>
+    <div class="card-title">Drug-Likeness ML</div>
+    <div style="font-size:.75rem;color:var(--muted)">Gradient Boosting classifier predicts drug-likeness probability from molecular descriptors.</div>
+  </a>
+  <a href="{{ url_for('prediction.admet') }}" class="card" style="text-decoration:none;transition:border-color .2s;cursor:pointer" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='var(--border)'">
+    <div style="font-size:2rem;margin-bottom:.5rem">🧪</div>
+    <div class="card-title">ADMET Predictor</div>
+    <div style="font-size:.75rem;color:var(--muted)">Predict absorption, distribution, metabolism, excretion, and toxicity profile.</div>
+  </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  renderPlotly('chart-mw-logp',   {{ chart_mw_logp | safe }});
+  renderPlotly('chart-qed',       {{ chart_qed | safe }});
+  renderPlotly('chart-heatmap',   {{ chart_heatmap | safe }});
+  renderPlotly('chart-tpsa-mw',   {{ chart_tpsa_mw | safe }});
+</script>
+{% endblock %}

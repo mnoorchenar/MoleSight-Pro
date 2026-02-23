@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Molecule Analyzer — MoleSight AI{% endblock %}
+
+{% block content %}
+<div class="page-header fade-up">
+  <h1>Molecule <span class="accent">Analyzer</span></h1>
+  <div class="sub">Compute physicochemical properties · Lipinski / Veber / Ghose rule assessment · 2D structure rendering</div>
+</div>
+
+<div class="grid-2 fade-up">
+
+  <!-- Input panel -->
+  <div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">SMILES Input</div>
+      <form method="POST" action="{{ url_for('main.analyze') }}">
+        <div class="form-group">
+          <label class="form-label" for="smiles-input">SMILES String</label>
+          <input id="smiles-input" name="smiles" class="form-input"
+                 placeholder="e.g. CC(=O)Oc1ccccc1C(=O)O"
+                 value="{{ smiles_input }}" autocomplete="off"/>
+        </div>
+        <div style="margin-bottom:1rem">
+          <div class="form-label">Quick Examples</div>
+          <div class="example-pills">
+            {% for name, smi in examples %}
+            <span class="pill" data-smiles="{{ smi }}">{{ name }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">⬡ Analyze Molecule</button>
+      </form>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-error fade-up">⚠ {{ error }}</div>
+    {% endif %}
+
+    {% if result %}
+    <!-- Property table -->
+    <div class="card fade-up" style="margin-bottom:1rem">
+      <div class="card-title">Physicochemical Properties</div>
+      <table class="prop-table">
+        <thead>
+          <tr><th>Property</th><th>Value</th><th>Threshold</th></tr>
+        </thead>
+        <tbody>
+          {% set p = result.props %}
+          <tr><td>Formula</td><td class="val">{{ p.formula }}</td><td>—</td></tr>
+          <tr><td>Mol. Weight (Da)</td><td class="val">{{ p.mw }}</td><td>&le;500 (Ro5)</td></tr>
+          <tr><td>LogP</td><td class="val">{{ p.logp }}</td><td>&le;5 (Ro5)</td></tr>
+          <tr><td>H-Bond Donors</td><td class="val">{{ p.hbd }}</td><td>&le;5 (Ro5)</td></tr>
+          <tr><td>H-Bond Acceptors</td><td class="val">{{ p.hba }}</td><td>&le;10 (Ro5)</td></tr>
+          <tr><td>TPSA (Å²)</td><td class="val">{{ p.tpsa }}</td><td>&le;140 (Veber)</td></tr>
+          <tr><td>Rotatable Bonds</td><td class="val">{{ p.rotbonds }}</td><td>&le;10 (Veber)</td></tr>
+          <tr><td>Heavy Atoms</td><td class="val">{{ p.heavy_atoms }}</td><td>20–70 (Ghose)</td></tr>
+          <tr><td>Aromatic Rings</td><td class="val">{{ p.aromatic_rings }}</td><td>—</td></tr>
+          <tr><td>Fsp³</td><td class="val">{{ p.fsp3 }}</td><td>&gt;0.25 preferred</td></tr>
+          <tr><td>QED Score</td><td class="val" style="color:var(--amber)">{{ p.qed }}</td><td>0–1 (higher=better)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Rule assessments -->
+    <div class="card fade-up">
+      <div class="card-title">Rule Assessments</div>
+
+      <div style="margin-bottom:.75rem">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
+          <span style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Lipinski Ro5</span>
+          {% if result.lipinski.passed %}
+            <span class="tag tag-green">✓ PASS</span>
+          {% else %}
+            <span class="tag tag-red">{{ result.lipinski.violations }} violation{{ 's' if result.lipinski.violations != 1 }}</span>
+          {% endif %}
+        </div>
+        <div class="rule-grid">
+          {% for rule, passed in result.lipinski.rules.items() %}
+          <div class="rule-item {{ 'rule-pass' if passed else 'rule-fail' }}">
+            <span class="rule-check">{{ '✓' if passed else '✗' }}</span>
+            <span style="font-size:.7rem;color:{{ 'var(--g1)' if passed else 'var(--red)' }}">{{ rule }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="margin-bottom:.75rem">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
+          <span style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Veber Rules</span>
+          {% if result.veber.passed %}
+            <span class="tag tag-green">✓ PASS</span>
+          {% else %}
+            <span class="tag tag-amber">{{ result.veber.violations }} violation{{ 's' if result.veber.violations != 1 }}</span>
+          {% endif %}
+        </div>
+        <div class="rule-grid">
+          {% for rule, passed in result.veber.rules.items() %}
+          <div class="rule-item {{ 'rule-pass' if passed else 'rule-fail' }}">
+            <span class="rule-check">{{ '✓' if passed else '✗' }}</span>
+            <span style="font-size:.7rem;color:{{ 'var(--g1)' if passed else 'var(--red)' }}">{{ rule }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
+          <span style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Ghose Filter</span>
+          {% if result.ghose.passed %}
+            <span class="tag tag-green">✓ PASS</span>
+          {% else %}
+            <span class="tag tag-amber">{{ result.ghose.violations }} violation{{ 's' if result.ghose.violations != 1 }}</span>
+          {% endif %}
+        </div>
+        <div class="rule-grid">
+          {% for rule, passed in result.ghose.rules.items() %}
+          <div class="rule-item {{ 'rule-pass' if passed else 'rule-fail' }}">
+            <span class="rule-check">{{ '✓' if passed else '✗' }}</span>
+            <span style="font-size:.7rem;color:{{ 'var(--g1)' if passed else 'var(--red)' }}">{{ rule }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right panel: structure + radar -->
+  <div>
+    {% if result %}
+    <!-- 2D Structure -->
+    <div class="card fade-up" style="margin-bottom:1rem">
+      <div class="card-title">2D Structure Rendering</div>
+      {% if result.svg_img %}
+        <div class="mol-svg">
+          {{ result.svg_img | safe }}
+        </div>
+      {% else %}
+        <div class="mol-placeholder">
+          <span>🔬 RDKit not available — structure not rendered</span>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Radar -->
+    <div class="card fade-up">
+      <div class="card-title">Drug-Likeness Profile (Radar)</div>
+      <div id="chart-radar" class="plotly-wrap" style="min-height:320px"></div>
+    </div>
+
+    {% else %}
+    <!-- Placeholder info -->
+    <div class="card fade-up" style="border-style:dashed;margin-bottom:1rem">
+      <div style="text-align:center;padding:2rem;color:var(--muted)">
+        <div style="font-size:3rem;margin-bottom:.75rem">⬡</div>
+        <div style="font-size:.85rem">Enter a SMILES string and click <strong style="color:var(--g1)">Analyze Molecule</strong> to compute properties.</div>
+      </div>
+    </div>
+
+    <div class="card fade-up">
+      <div class="card-title">About the Rules</div>
+      <div style="font-size:.78rem;color:var(--text);line-height:1.7">
+        <p style="margin-bottom:.6rem"><strong style="color:var(--g1)">Lipinski's Rule of Five</strong> — MW &le;500, LogP &le;5, HBD &le;5, HBA &le;10. Predicts oral bioavailability.</p>
+        <p style="margin-bottom:.6rem"><strong style="color:var(--g2)">Veber Rules</strong> — TPSA &le;140 Å² and RotBonds &le;10. Predicts good oral absorption in rats.</p>
+        <p><strong style="color:var(--amber)">Ghose Filter</strong> — Tighter constraints on MW, LogP, and heavy atom count for lead-like molecules.</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  {% if result %}
+  renderPlotly('chart-radar', {{ result.chart_radar | safe }});
+  {% endif %}
+</script>
+{% endblock %}

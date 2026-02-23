@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Virtual Screening — MoleSight AI{% endblock %}
+
+{% block content %}
+<div class="page-header fade-up">
+  <h1>Virtual <span class="accent">Screening</span></h1>
+  <div class="sub">Compound library ranked by composite docking / pharmacophore score · Select a target to re-rank</div>
+</div>
+
+<!-- Target selector -->
+<div class="card fade-up" style="margin-bottom:1rem">
+  <div class="card-title">Target Selection</div>
+  <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+    <span style="font-size:.75rem;color:var(--muted)">Filter by target:</span>
+    <a href="{{ url_for('screening.screening') }}" class="btn btn-outline btn-sm">All Targets</a>
+    {% for t in targets %}
+    <a href="{{ url_for('screening.screening') }}?target={{ t }}"
+       class="btn btn-outline btn-sm" style="font-size:.65rem">{{ t }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="grid-2 fade-up delay-1" style="margin-bottom:1rem">
+  <div class="card">
+    <div class="card-title">Score vs QED Scatter</div>
+    <div id="chart-scatter" class="plotly-wrap"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Compounds per Biological Target</div>
+    <div id="chart-targets" class="plotly-wrap"></div>
+  </div>
+</div>
+
+<!-- Ranked results table -->
+<div class="card fade-up delay-2">
+  <div class="card-title">Ranked Compound Library</div>
+  <div style="overflow-x:auto">
+    <table class="compound-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Name</th>
+          <th>Target</th>
+          <th>Score ↓</th>
+          <th>QED</th>
+          <th>MW</th>
+          <th>LogP</th>
+          <th>IC₅₀ (nM)</th>
+          <th>Drug-Like</th>
+          <th>Activity</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in compounds %}
+        <tr>
+          <td>
+            {% if loop.index0 == 0 %}
+              <span style="color:var(--amber);font-weight:700">#1</span>
+            {% elif loop.index0 == 1 %}
+              <span style="color:var(--g2)">#2</span>
+            {% elif loop.index0 == 2 %}
+              <span style="color:var(--g1)">#3</span>
+            {% else %}
+              <span style="color:var(--muted)">#{{ loop.index }}</span>
+            {% endif %}
+          </td>
+          <td style="color:#fff;font-weight:500">{{ c.name }}</td>
+          <td style="color:var(--muted);font-size:.7rem">{{ c.target }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:.4rem">
+              <div style="width:40px;height:4px;background:var(--surface);border-radius:2px;overflow:hidden">
+                <div style="height:100%;width:{{ (c.score*100)|round|int }}%;background:{% if c.score >= 0.6 %}var(--g1){% elif c.score >= 0.4 %}var(--amber){% else %}var(--red){% endif %};border-radius:2px"></div>
+              </div>
+              <span style="color:{% if c.score >= 0.6 %}var(--g1){% elif c.score >= 0.4 %}var(--amber){% else %}var(--red){% endif %}">{{ c.score }}</span>
+            </div>
+          </td>
+          <td style="color:var(--amber)">{{ c.qed }}</td>
+          <td>{{ c.mw }}</td>
+          <td>{{ c.logp }}</td>
+          <td>
+            {% if c.ic50_nm < 10 %}
+              <span style="color:var(--g1)">{{ c.ic50_nm }}</span>
+            {% elif c.ic50_nm < 100 %}
+              <span style="color:var(--amber)">{{ c.ic50_nm }}</span>
+            {% else %}
+              <span style="color:var(--muted)">{{ c.ic50_nm }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if c.drug_like %}
+              <span class="tag tag-green">Yes</span>
+            {% else %}
+              <span class="tag tag-red">No</span>
+            {% endif %}
+          </td>
+          <td><span class="tag tag-blue" style="font-size:.6rem">{{ c.activity }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Methodology note -->
+<div class="card fade-up delay-3" style="margin-top:1rem;border-style:dashed">
+  <div class="card-title">Scoring Methodology</div>
+  <div style="font-size:.75rem;color:var(--text);line-height:1.7">
+    The composite screening score combines: <span style="color:var(--g1)">pIC₅₀ (45%)</span>, 
+    <span style="color:var(--g2)">QED drug-likeness (25%)</span>, 
+    <span style="color:var(--amber)">LogP optimality (15%)</span>, 
+    <span style="color:var(--g1)">TPSA (10%)</span>, and 
+    <span style="color:var(--muted)">MW (5%)</span>, with penalties for Lipinski violations.
+    This mimics a multi-parameter optimisation (MPO) approach used in real lead optimisation campaigns.
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  renderPlotly('chart-scatter', {{ chart_scatter | safe }});
+  renderPlotly('chart-targets', {{ chart_targets | safe }});
+</script>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Drug-Likeness Predictor — MoleSight AI{% endblock %}
+
+{% block content %}
+<div class="page-header fade-up">
+  <h1>Drug-Likeness <span class="accent">ML Predictor</span></h1>
+  <div class="sub">Gradient Boosting Classifier · 5-Fold CV · Trained on 1,500 synthetic compounds</div>
+</div>
+
+<div class="grid-2 fade-up">
+
+  <!-- Left: Input + prediction result -->
+  <div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">SMILES Input</div>
+      <form method="POST" action="{{ url_for('prediction.drug_likeness') }}">
+        <div class="form-group">
+          <label class="form-label" for="smiles-input">SMILES String</label>
+          <input id="smiles-input" name="smiles" class="form-input"
+                 placeholder="e.g. CC(=O)Nc1ccc(O)cc1"
+                 value="{{ smiles_input }}" autocomplete="off"/>
+        </div>
+        <div style="margin-bottom:1rem">
+          <div class="form-label">Quick Examples</div>
+          <div class="example-pills">
+            {% for name, smi in examples %}
+            <span class="pill" data-smiles="{{ smi }}">{{ name }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">🧠 Predict Drug-Likeness</button>
+      </form>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-error fade-up">⚠ {{ error }}</div>
+    {% endif %}
+
+    {% if result %}
+    <!-- Prediction output -->
+    <div class="card fade-up" style="margin-bottom:1rem">
+      <div class="card-title">Prediction Result</div>
+      <div style="display:flex;align-items:center;gap:1.25rem;margin-bottom:1rem">
+        <div class="score-badge" style="{% if result.pred.probability >= 0.6 %}border-color:var(--g1);color:var(--g1){% elif result.pred.probability >= 0.4 %}border-color:var(--amber);color:var(--amber){% else %}border-color:var(--red);color:var(--red){% endif %}">
+          {{ (result.pred.probability * 100)|round|int }}%
+        </div>
+        <div>
+          <div style="font-family:var(--font-head);font-size:1.15rem;font-weight:700;color:#fff">
+            {{ result.pred.label }}
+          </div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:2px">
+            Confidence: <span style="color:var(--g2)">{{ result.pred.confidence }}</span>
+          </div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:2px">
+            5-Fold CV Accuracy: <span style="color:var(--g1)">{{ (result.cv_accuracy * 100)|round(1) }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key properties used -->
+    <div class="card fade-up" style="margin-bottom:1rem">
+      <div class="card-title">Input Features (Model View)</div>
+      <table class="prop-table">
+        <thead><tr><th>Feature</th><th>Value</th></tr></thead>
+        <tbody>
+          {% set p = result.props %}
+          <tr><td>Molecular Weight</td><td class="val">{{ p.mw }} Da</td></tr>
+          <tr><td>LogP</td><td class="val">{{ p.logp }}</td></tr>
+          <tr><td>H-Bond Donors</td><td class="val">{{ p.hbd }}</td></tr>
+          <tr><td>H-Bond Acceptors</td><td class="val">{{ p.hba }}</td></tr>
+          <tr><td>TPSA</td><td class="val">{{ p.tpsa }} Å²</td></tr>
+          <tr><td>Rotatable Bonds</td><td class="val">{{ p.rotbonds }}</td></tr>
+          <tr><td>QED Score</td><td class="val" style="color:var(--amber)">{{ p.qed }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Lipinski summary -->
+    <div class="card fade-up">
+      <div class="card-title">Lipinski Ro5 Assessment</div>
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.6rem">
+        {% if result.lipinski.passed %}
+          <span class="tag tag-green" style="font-size:.8rem;padding:.25rem .75rem">✓ COMPLIANT</span>
+        {% else %}
+          <span class="tag tag-red" style="font-size:.8rem;padding:.25rem .75rem">✗ {{ result.lipinski.violations }} VIOLATION(S)</span>
+        {% endif %}
+        <span style="font-size:.72rem;color:var(--muted)">{{ result.lipinski.label }}</span>
+      </div>
+      <div class="rule-grid">
+        {% for rule, passed in result.lipinski.rules.items() %}
+        <div class="rule-item {{ 'rule-pass' if passed else 'rule-fail' }}">
+          <span class="rule-check">{{ '✓' if passed else '✗' }}</span>
+          <span style="font-size:.7rem;color:{{ 'var(--g1)' if passed else 'var(--red)' }}">{{ rule }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: Charts -->
+  <div>
+    {% if result %}
+    <div class="card fade-up" style="margin-bottom:1rem">
+      <div class="card-title">Prediction Probability Gauge</div>
+      <div id="chart-gauge" class="plotly-wrap" style="min-height:280px"></div>
+    </div>
+    <div class="card fade-up" style="margin-bottom:1rem">
+      <div class="card-title">Drug-Likeness Profile (Radar)</div>
+      <div id="chart-radar" class="plotly-wrap" style="min-height:320px"></div>
+    </div>
+    <div class="card fade-up">
+      <div class="card-title">Feature Importance</div>
+      <div id="chart-fi" class="plotly-wrap" style="min-height:300px"></div>
+    </div>
+    {% else %}
+    <div class="card fade-up" style="border-style:dashed">
+      <div style="text-align:center;padding:3rem;color:var(--muted)">
+        <div style="font-size:3rem;margin-bottom:.75rem">🧠</div>
+        <div style="font-size:.85rem;max-width:280px;margin:0 auto">
+          The Gradient Boosting model uses 7 molecular descriptors to predict whether a compound is drug-like.
+          Enter a SMILES string to see the prediction.
+        </div>
+      </div>
+    </div>
+
+    <div class="card fade-up" style="margin-top:1rem">
+      <div class="card-title">Model Architecture</div>
+      <div style="font-size:.78rem;color:var(--text);line-height:1.7">
+        <p style="margin-bottom:.5rem"><strong style="color:var(--g1)">Algorithm</strong> — Gradient Boosting Classifier (scikit-learn)</p>
+        <p style="margin-bottom:.5rem"><strong style="color:var(--g2)">Training Data</strong> — 1,500 synthetic compounds with realistic property distributions</p>
+        <p style="margin-bottom:.5rem"><strong style="color:var(--amber)">Features</strong> — MW, LogP, HBD, HBA, TPSA, RotBonds, QED</p>
+        <p><strong style="color:var(--g1)">Evaluation</strong> — 5-fold cross validation accuracy</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  {% if result %}
+  renderPlotly('chart-gauge', {{ result.chart_gauge | safe }});
+  renderPlotly('chart-radar', {{ result.chart_radar | safe }});
+  renderPlotly('chart-fi',    {{ result.chart_fi    | safe }});
+  {% endif %}
+</script>
+{% endblock %}

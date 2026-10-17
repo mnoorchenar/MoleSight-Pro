@@ -16,8 +16,12 @@ sdk: docker
 [![Flask](https://img.shields.io/badge/Flask-2.x-4f46e5?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-3b82f6?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 [![RDKit](https://img.shields.io/badge/RDKit-Cheminformatics-00ff88?style=for-the-badge)](https://www.rdkit.org/)
-[![HuggingFace](https://img.shields.io/badge/HuggingFace-Spaces-ffcc00?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/mnoorchenar/spaces)
 [![Status](https://img.shields.io/badge/Status-Active-22c55e?style=for-the-badge)](#)
+
+<br/>
+
+[![Live Demo](https://img.shields.io/badge/%E2%96%B6_Live_Demo-Hugging_Face_Space-ffcc00?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/spaces/mnoorchenar/MoleSight-Pro)
+[![Source Code](https://img.shields.io/badge/Source_Code-GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/mnoorchenar/MoleSight-Pro)
 
 <br/>
 
@@ -40,7 +44,7 @@ sdk: docker
 - [Project Structure](#-project-structure)
 - [Author](#-author)
 - [Contributing](#-contributing)
-- [Disclaimer](#disclaimer)
+- [Disclaimer](#️-disclaimer)
 - [License](#-license)
 
 ---
@@ -102,15 +106,14 @@ sdk: docker
 ### Prerequisites
 
 - Python 3.10+
-- Docker & Docker Compose
 - Git
 
 ### Local Installation
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/mnoorchenar/drug-discovery-dashboard.git
-cd drug-discovery-dashboard
+git clone https://github.com/mnoorchenar/MoleSight-Pro.git
+cd MoleSight-Pro
 
 # 2. Create a virtual environment
 python -m venv venv
@@ -135,11 +138,9 @@ Open your browser at `http://localhost:7860` 🎉
 
 ```bash
 # Build and run with Docker
-docker build -t drug-discovery-dashboard .
-docker run -p 7860:7860 drug-discovery-dashboard
+docker build -t MoleSight-Pro .
+docker run -p 7860:7860 MoleSight-Pro
 
-# Or use docker compose
-docker compose up --build
 ```
 
 ---
@@ -175,43 +176,30 @@ models = {
 ## 📁 Project Structure
 
 ```
-drug-discovery-dashboard/
+MoleSight-Pro/
 │
-├── 📂 app/
-│   ├── 📂 routes/
-│   │   ├── main.py            # Home dashboard + Molecule Analyzer routes
-│   │   ├── prediction.py      # Drug-Likeness ML + ADMET routes + REST API
-│   │   └── screening.py       # Virtual Screening + target filter routes
-│   │
-│   ├── 📂 models/
-│   │   ├── drug_likeness.py   # GBM drug-likeness classifier (train + predict)
-│   │   └── admet.py           # Multi-output ADMET regressor (train + predict)
-│   │
-│   ├── 📂 utils/
-│   │   ├── molecular.py       # RDKit property computation, rule assessments, SVG
-│   │   └── charts.py          # Plotly chart generators (radar, gauge, heatmap …)
-│   │
-│   ├── 📂 data/
-│   │   └── compound_library.py  # 20 curated drug entries + summary stats
-│   │
-│   └── __init__.py            # Flask app factory + model initialisation
-│
-├── 📂 templates/
-│   ├── base.html              # Biopunk dark theme layout + sidebar navigation
-│   ├── index.html             # Analytics dashboard
-│   ├── analyze.html           # Molecule Analyzer
-│   ├── prediction.html        # Drug-Likeness ML page
-│   ├── admet.html             # ADMET Predictor page
-│   └── screening.html         # Virtual Screening page
-│
-├── 📂 static/
-│   ├── 📂 css/style.css       # Supplemental responsive styles
-│   └── 📂 js/main.js          # Client-side interactions + Plotly resize
-│
-├── 📄 app.py                  # Application entry point
-├── 📄 Dockerfile              # Multi-stage Docker build (port 7860)
-├── 📄 requirements.txt        # Python dependencies
-└── 📄 .env.example            # Environment variable template
+├── 📄 .env.example               # Environment variable template
+├── 📄 Dockerfile                 # Multi-stage Docker build (port 7860)
+├── 📄 __init__.py
+├── 📄 admet.html
+├── 📄 admet.py
+├── 📄 analyze.html
+├── 📄 app.py                     # Application entry point
+├── 📄 base.html
+├── 📄 charts.py
+├── 📄 compound_library.py
+├── 📄 drug_likeness.py
+├── 📄 files.zip
+├── 📄 index.html                 # App entry page
+├── 📄 main.js
+├── 📄 main.py
+├── 📄 molecular.py
+├── 📄 prediction.html
+├── 📄 prediction.py
+├── 📄 requirements.txt           # Python dependencies
+├── 📄 screening.html
+├── 📄 screening.py
+└── 📄 style.css
 ```
 
 ---
@@ -224,7 +212,7 @@ drug-discovery-dashboard/
 <tr>
 <td align="center" width="100%">
 
-<img src="https://avatars.githubusercontent.com/mnoorchenar" width="120" style="border-radius:50%; border: 3px solid #00ff88;" alt="Mohammad Noorchenarboo"/>
+<img src="https://avatars.githubusercontent.com/mnoorchenar" width="120" style="border-radius:50%; border: 3px solid #4f46e5;" alt="Mohammad Noorchenarboo"/>
 
 <h3>Mohammad Noorchenarboo</h3>
 
@@ -236,7 +224,7 @@ drug-discovery-dashboard/
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/mnoorchenar)&nbsp;
 [![Personal Site](https://img.shields.io/badge/Website-mnoorchenar.github.io-4f46e5?style=for-the-badge&logo=githubpages&logoColor=white)](https://mnoorchenar.github.io/)&nbsp;
-[![HuggingFace](https://img.shields.io/badge/HuggingFace-ffcc00?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/mnoorchenar/spaces)&nbsp;
+[![HuggingFace](https://img.shields.io/badge/HuggingFace-ffcc00?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/mnoorchenar)&nbsp;
 [![Google Scholar](https://img.shields.io/badge/Scholar-4285F4?style=for-the-badge&logo=googlescholar&logoColor=white)](https://scholar.google.ca/citations?user=nn_Toq0AAAAJ&hl=en)&nbsp;
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/mnoorchenar)
 
@@ -260,25 +248,26 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-## Disclaimer
+## ⚠️ Disclaimer
 
-<span style="color:red">This project is developed strictly for educational and research purposes and does not constitute professional medical, pharmaceutical, or clinical advice of any kind. All datasets used are either synthetically generated or represent publicly available literature values — no proprietary or patient data is stored or processed. Predictions are for demonstration only and must not be used to guide real drug development decisions. This software is provided "as is" without warranty of any kind; use at your own risk.</span>
+> [!WARNING]
+> This project is developed strictly for educational and research purposes and does not constitute professional medical, pharmaceutical, or clinical advice of any kind. All datasets used are either synthetically generated or represent publicly available literature values — no proprietary or patient data is stored or processed. Predictions are for demonstration only and must not be used to guide real drug development decisions. This software is provided "as is" without warranty of any kind; use at your own risk.
 
 ---
 
 ## 📜 License
 
-Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
+Distributed under the **MIT License**.
 
 ---
 
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:00ff88,100:00ccff&height=120&section=footer&text=Made%20with%20%E2%9D%A4%EF%B8%8F%20by%20Mohammad%20Noorchenarboo&fontColor=0a0e1a&fontSize=18&fontAlignY=80" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:00ff88,100:00ccff&height=120&section=footer&text=Made%20with%20%E2%9D%A4%EF%B8%8F%20by%20Mohammad%20Noorchenarboo&fontColor=ffffff&fontSize=18&fontAlignY=80" width="100%"/>
 
-[![GitHub Stars](https://img.shields.io/github/stars/mnoorchenar/drug-discovery-dashboard?style=social)](https://github.com/mnoorchenar/drug-discovery-dashboard)
-[![GitHub Forks](https://img.shields.io/github/forks/mnoorchenar/drug-discovery-dashboard?style=social)](https://github.com/mnoorchenar/drug-discovery-dashboard/fork)
+[![GitHub Stars](https://img.shields.io/github/stars/mnoorchenar/MoleSight-Pro?style=social)](https://github.com/mnoorchenar/MoleSight-Pro/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/mnoorchenar/MoleSight-Pro?style=social)](https://github.com/mnoorchenar/MoleSight-Pro/fork)
 
-<sub>The name "MoleSight AI" is used purely for academic and portfolio purposes. Any similarity to existing products or trademarks is entirely coincidental. This project has no affiliation with any commercial pharmaceutical or biotech entity.</sub>
+<sub>The name "MoleSight AI — Drug Discovery Dashboard" is used purely for academic and research purposes. Any similarity to existing product names or trademarks is entirely coincidental. This project has no affiliation with any commercial entity.</sub>
 
 </div>
